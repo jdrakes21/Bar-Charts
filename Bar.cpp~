@@ -1,0 +1,291 @@
+/*****************************************
+** File:    Bar.cpp
+** Project: CMSC 202 Project 5, Spring 2023
+** Author:  Jervon Drakes
+** Date:    5/02/23
+** Section: 44
+** E-mail:  jdrakes1@umbc.edu
+**
+** This file contains the Game.cpp file for Project 5.
+** This program reads the Bar.h file and its functions and
+** executes those functions to implement proj5.cpp
+**
+**
+**
+***********************************************/
+
+#include "Bar.h"
+
+
+// Bar (Default Constructor) 
+// Dynamically allocates m_data for strings (always). m_fileName defaults to test.txt  
+Bar::Bar() {
+      
+  m_data = new LL<string>(); // creates a new m_data and dynamically alloactes memory
+  
+  m_fileName = "test.txt";
+
+}
+
+// Bar (Overloaded Constructor)
+// Used to pass an input file. Dynamically allocates m_data for strings (always). Sets m_fileName and nothing done with m_dataSorted until SortData
+Bar::Bar(string filename){
+  
+  m_data = new LL<string>(); // creates a new m_data and dynamically alloactes memory
+
+  m_fileName = filename; // passes the filename as m_filename
+
+}
+
+// ~Bar (Destructor)
+// Deallocates m_data
+Bar::~Bar(){
+
+  delete m_data;
+
+}
+
+// Start
+// Calls LoadFile, RemoveCommon, RemoveSingles, Sort, DisplayBars, and Export. During testing, may want to call Display
+void Bar::Start(){
+  LoadFile();
+  
+  RemoveCommon();
+  
+  RemoveSingles();
+  
+  SortData();
+  
+  DisplayBars();
+  
+  Export();
+}
+
+
+// LoadFile()
+// Loads a file (everything as a string although could be anything stringlike). Calls RemovePunct as each item is loaded. Each input file is an unknown length
+void Bar::LoadFile(){
+
+  ifstream inputStream;
+
+  inputStream.open(m_fileName); // opens the file which is passed
+  
+  string userWord; 
+  
+  int counter = 0;
+ 
+  // loops through the file and retrieves the words within it 
+  while(inputStream >> userWord){
+
+    // calls RemovePunct on each word
+    RemovePunct(userWord); 
+
+    // inserts each word into m_data
+    m_data->Insert(userWord);
+    
+    counter++;
+  }
+  
+  // displays the number of words loaded
+  cout << counter << " loaded" << endl;
+  
+  inputStream.close();
+}
+
+
+// RemovePunct (passed a string)
+// Converts all input into lowercase using tolower. When passed a string, removes all non letter punctation on the beginning or end of the string.
+void Bar::RemovePunct(string &otherWord){
+
+  string::iterator it;
+  
+  it = otherWord.begin();     
+      
+  // loops until the end of the end iterator
+  while(it != otherWord.end()){
+
+    // determines if the beginning of the iterator has any non letter punctuation
+    if(it == otherWord.begin() && ispunct(*it)){
+
+        
+	it = otherWord.erase(it); // erases this part of the string once the conditional is met
+
+	// determines if the end of the string iterator has any non letter punctuation
+    } else if (ispunct(*it) && *it == otherWord.back()){
+
+      // removes this part of the string once the conditional is met
+      otherWord.pop_back(); 
+
+    }else{
+      
+      *it = tolower(*it); // each string iterator is converted to lowercase
+      
+      it++;
+    }
+  }
+}
+  
+
+
+// RemoveCommon
+// Asks user if they want to remove common words. If yes, iterates through m_data and removes all common words after they are read
+void Bar::RemoveCommon(){
+
+  string verifyCommon;
+  
+  cout << "Would you like to remove all common words (Only use with essays)?" << endl;
+  
+  cin >> verifyCommon;
+     
+  // creates a an interator for a vector 
+  vector<string>::const_iterator iter;  
+
+  // dtermines if the user input any variation of yes
+  if(verifyCommon == "yes" || verifyCommon == "Yes" || verifyCommon == "y"){
+
+    // loops through the vector iterator
+    for(iter = EXCLUDE_LIST.begin(); iter != EXCLUDE_LIST.end(); iter++){
+
+      // removes any data included in the exclude list
+      m_data->RemoveAt(*iter); 
+      
+    }
+    cout << "All common words removed" << endl;
+  }
+  
+}
+
+
+// RemoveSingles
+// Asks the user if they would like to remove words with a frequency of 1
+void Bar::RemoveSingles(){
+
+
+  string singlesVerify;
+  
+  cout << "Would you like to remove all words with a frequency of 1?" << endl;
+
+  cin >> singlesVerify;
+  
+    
+  int numWords = 0;
+
+  // determines if the user input is any variation of yes
+  if(singlesVerify == "yes" || singlesVerify == "y" || singlesVerify == "Yes"){
+
+    // loops through m_data
+    for(int i = 0; i < m_data->GetSize(); i++){
+
+      // determines if the second value of the pair is 1
+      if((*m_data)[i].second == 1){
+
+	// the removed function is called which removes any data that meets the condition
+	m_data->RemoveAt((*m_data)[i].first);
+
+	i = 0;
+
+	numWords++;	
+      }
+      
+    }
+
+    // determines if the second value of the pair of the first element's data is one  
+    if((*m_data)[0].second == 1){
+
+      // removes its first value
+      m_data->RemoveAt((*m_data)[0].first); 
+
+      numWords++;
+    }
+    
+    cout << numWords << " words removed";
+  }
+
+ 
+  cout << endl;
+}
+
+
+// SortData
+// Iterates through each items in m_data and inserts into m_dataSorted using the frequency as the key (can use make_pair)
+void Bar::SortData(){
+
+  // loops through m_data
+  for(int i = 0; i < m_data->GetSize(); i++){
+
+    // inserts the data within m_data ito m_dataSorted which sorts by the frequency
+    m_dataSorted.insert(make_pair((*m_data)[i].second, (*m_data)[i].first));
+
+  }
+}
+
+// DisplayBars
+// Displays a bar chart for each item in m_dataSorted from highest frequency (at the top) to lowest frequency (at the bottom) (iterate backwards)
+void Bar::DisplayBars(){
+
+  // creates a reverse iterator for a multimap
+  multimap<int, string>::reverse_iterator rit; 
+
+  // loops through the reverse iterator
+  for(rit = m_dataSorted.rbegin(); rit != m_dataSorted.rend(); ++rit){
+
+    // displays each word within the m_dataSorted
+    cout << setw(15) << rit->second << ": ";
+
+    // loops through the frequency of each word
+    for(int i = 0; i < rit->first; i++){
+
+      // displays the frequency of the word using barChar
+      cout << barChar;      
+    }
+    
+    cout << endl;
+  }
+  
+}
+
+// Export
+// Asks the user what name the export file should be called. Iterates through m_dataSorted and exports to file
+void Bar::Export(){
+
+  ofstream output;
+ 
+  string outputTextName = " "; // name of the file which will be exported
+    
+  cout << "What would you like to call the export file?" << endl;
+
+  cin >> outputTextName;
+  
+  // opens the file
+  output.open(outputTextName);
+
+  // creates an reverse iterator for a multimap
+  multimap<int , string>::reverse_iterator riter; 
+
+  // loops through the reverse iterator 
+  for(riter = m_dataSorted.rbegin(); riter != m_dataSorted.rend(); ++riter){
+
+    // the second value of the multimap is placed into output
+    output << setw(15) << riter->second << ": ";
+
+    // loops through the first value of the multimap which is the frequency
+    for(int i = 0; i < riter->first; i++){
+
+      // the constant barChar is placed into output
+      output << barChar;
+    }
+    
+    output << endl;
+  }
+  
+  cout << "Output to exportFile " << outputTextName;
+
+  // file is close
+  output.close();
+}
+  
+  
+
+ 
+
+  
